@@ -2,8 +2,8 @@ package com.ap.games.cells
 
 trait CellGameAction
 
-case object CellGameNoAction extends CellGameAction
-case object CellGameMoveRight extends CellGameAction
-case object CellGameMoveLeft extends CellGameAction
-case object CellGameMoveDown extends CellGameAction
-case object CellGameMoveUp extends CellGameAction
+case object NoAction extends CellGameAction
+case object MoveRight extends CellGameAction
+case object MoveLeft extends CellGameAction
+case object MoveDown extends CellGameAction
+case object MoveUp extends CellGameAction

@@ -12,7 +12,8 @@ case class Node[A, S](
   var children: Map[A, Node[A, S]] = Map.empty,
   var playouts: Int = 0,
   var totalReward: Double = 0,
-  maybeParent: Option[Node[A, S]]
+  maybeParent: Option[Node[A, S]],
+  var descendants: Int = 0
 ) {
   import Node._
 

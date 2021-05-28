@@ -3,7 +3,7 @@ package com.ap.games.cells
 import com.ap.games.mcts.Mcts
 
 object CellsMain extends App {
-  val game = Cells()
+  val game = CellsGame(initialState = CellsState())
   var curState = game.initialState
   while(game.actions(curState).nonEmpty) {
     val node = Mcts.bestMove(game, curState)
