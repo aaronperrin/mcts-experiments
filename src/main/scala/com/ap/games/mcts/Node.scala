@@ -27,7 +27,7 @@ case class Node[A, S](
 
   def ucb1(childAction: A) = {
     val child = children(childAction)
-    child.totalReward / child.playouts + 1.8 * Math.sqrt(Math.log(playouts) / child.playouts)
+    child.totalReward / child.playouts + 1.414 * Math.sqrt(Math.log(playouts) / child.playouts)
   }
 
   def bestChild = {
