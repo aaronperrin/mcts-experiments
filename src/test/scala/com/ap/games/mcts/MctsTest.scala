@@ -23,4 +23,12 @@ class MctsTest extends AnyFunSuite {
     val bestAction = node.bestChild._1
     assert(bestAction == MoveUp || bestAction == MoveRight)
   }
+
+  test("test big grid") {
+    val game = CellsGame(initialState = CellsState(min = -10, max = 10, posX = 0, posY = 0, targetX = 9, targetY = 9))
+    val curState = game.initialState
+    val node = Mcts.bestMove(game, curState)
+    val bestAction = node.bestChild._1
+    assert(bestAction == MoveUp || bestAction == MoveRight)
+  }
 }

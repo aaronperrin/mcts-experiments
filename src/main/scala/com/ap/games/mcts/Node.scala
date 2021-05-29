@@ -1,5 +1,6 @@
 package com.ap.games.mcts
 
+import scala.annotation.tailrec
 import scala.util.Random
 
 object Node {
@@ -34,6 +35,18 @@ case class Node[A, S](
     children.maxBy {
       case (_, child) => child.totalReward / child.playouts
     }
+  }
+
+  def bestPath: List[A] = bestPath(Nil)
+
+  @tailrec
+  private def bestPath(path: List[A] = Nil): List[A] = {
+    if(playouts > 1) {
+      val child = bestChild
+      child._2.bestPath(path :+ child._1)
+    }
+    else
+      path
   }
 
   def backprop(child: Node[A, S], reward: Double): Node[A, S] = {
