@@ -2,12 +2,10 @@ package com.ap.games.mcts
 
 object Mcts {
   def bestMove[A, S](game: Game[A, S], state: S, maxIterations: Int = 1000): Node[A, S] = {
-    var curNode = Node[A, S](game.noAction, state, Map(), 0, 0, None)
-    var nextNode: Node[A, S] = null
+    var curNode: Node[A, S] = Node[A, S](game.noAction, state)
     var i = 0
     while(i < maxIterations) {
-      nextNode = curNode.search(game)
-      curNode = nextNode
+      curNode = curNode.search(game)
       i = i + 1
     }
     curNode

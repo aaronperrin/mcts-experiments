@@ -9,18 +9,17 @@ object Node {
 case class Node[A, S](
   action: A,
   state: S,
-  var children: Map[A, Node[A, S]] = Map.empty,
-  var playouts: Int = 0,
-  var totalReward: Double = 0,
-  maybeParent: Option[Node[A, S]],
-  var descendants: Int = 0
+  maybeParent: Option[Node[A, S]] = None
 ) {
   import Node._
+  var children: Map[A, Node[A, S]] = Map.empty
+  var playouts: Int = 0
+  var totalReward: Double = 0
+  var descendants: Int = 0
 
   override def toString: String = {
     s"""
        |$action -> $state
-       |${children.keys}
        |$totalReward / $playouts
        |${maybeParent.map(_.action)}
        |""".stripMargin
@@ -28,12 +27,12 @@ case class Node[A, S](
 
   def ucb1(childAction: A) = {
     val child = children(childAction)
-    child.totalReward / child.playouts + 1.4 * Math.sqrt(Math.log(playouts) / child.playouts)
+    child.totalReward / child.playouts + 1.8 * Math.sqrt(Math.log(playouts) / child.playouts)
   }
 
   def bestChild = {
     children.maxBy {
-      case (_, child) => child.playouts
+      case (_, child) => child.totalReward / child.playouts
     }
   }
 
@@ -53,7 +52,7 @@ case class Node[A, S](
       val actionIndex = rand.nextInt(actions.length)
       val action = actions(actionIndex)
       val newState = game.nextState(state, action)
-      val newNode = Node[A, S](action, newState, Map(), 0, 0, Some(this))
+      val newNode = Node[A, S](action, newState, maybeParent = Some(this))
 
       // sim
       val playoutState = newNode.playout(game)
