@@ -38,7 +38,7 @@ case class CellsGame(maxMoves: Int = 25, initialState: CellsState) extends Game[
       1 + maxMoves / state.prevActions.length
     else {
       val dist = Math.sqrt(Math.pow(state.posX - state.targetX, 2) + Math.pow(state.posY - state.targetY, 2))
-      - state.prevActions.length - dist
+      (-state.prevActions.length - dist)
     }
   }
 }
