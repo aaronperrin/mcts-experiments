@@ -15,8 +15,13 @@ case class CardGame() extends Game[CardGameAction, CardState] {
     state: CardState,
     action: CardGameAction
   ): CardState = {
-    val updatedState = action.invoke(state)
-    updatedState
+    if(action == EndTurn) {
+      state.playEnemyActions.setupHeroTurn
+    }
+    else {
+      val updatedState = action.invoke(state)
+      updatedState
+    }
   }
 
   override def reward(state: CardState): Double =
@@ -34,7 +39,7 @@ case class CardGame() extends Game[CardGameAction, CardState] {
       context,
       (0 until 5).map(_ => Strike()).toList ++ (0 until 4).map(_ => Defend()).toList :+ Bash()
     ).shuffleAllIntoDraw.drawHand(5),
-    Enemy("Slime", 4, 4, Attack() :: Nil) :: Nil,
+    Enemy("Slime", 10, 10, Attack() :: Nil) :: Nil,
     Nil,
     Nil
   )

@@ -22,14 +22,16 @@ case class Cards(
     else this
   }
 
-  def drawHand(maxSize: Int): Cards = (0 until maxSize).foldRight(this) {
-    case (_, cards) => cards.drawOne
+  def drawHand(maxSize: Int): Cards = {
+    (0 until maxSize).foldRight(discardHand) {
+      case (_, cards) => cards.drawOne
+    }
   }
 
   def shuffleDraw: Cards = copy(draw = context.random.shuffle(draw))
 
   def discardCard(card: (Card, Int)): Cards = copy(
-    hand = hand.zipWithIndex.filter(_._2 != card._2).map(_._1),
+    hand = hand.filter(_ != card._1),
     discard = discard :+ card._1
   )
 }
