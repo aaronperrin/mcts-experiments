@@ -29,10 +29,10 @@ case class CardGame() extends Game[CardGameAction, CardState] {
 
   override def reward(state: CardState): Double =
     if(state.enemies.nonEmpty) {
-      - state.prevHeroActions.length - (state.hero.maxLife - state.hero.life)
+      0 - state.prevHeroActions.length - (state.hero.maxLife - state.hero.life)
     }
     else {
-      val value = state.deadEnemies.length / (1 + state.prevHeroActions.length)
+      val value = state.deadEnemies.length + 1 / (1 + state.prevHeroActions.length) + state.hero.life / state.hero.maxLife
       value
     }
 
