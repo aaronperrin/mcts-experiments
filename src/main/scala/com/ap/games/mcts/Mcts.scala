@@ -1,12 +1,10 @@
 package com.ap.games.mcts
 
-import com.ap.games.cells.NoAction
-import com.ap.games.mcts.Node.rand
-
 object Mcts {
   def bestMove[A, S](game: Game[A, S], startState: S, maxIterations: Int = 1000): Node[A, S] = {
     val rootNode: Node[A, S] = Node[A, S](game.noAction, startState)
-    for(i <- 1 to maxIterations) {
+
+    (1 to maxIterations).foreach(_ => {
       // select
       var node = rootNode
       var state = rootNode.state
@@ -19,7 +17,10 @@ object Mcts {
 
       if(actions.nonEmpty) {
         // expand
-        val action = actions.find(a => !node.children.contains(a)).get
+        val action = actions.find(a => {
+          val v = !node.children.contains(a)
+          v
+        }).get
         val newState = game.nextState(state, action)
         val newNode = Node[A, S](action, newState, maybeParent = Some(node))
 
@@ -36,7 +37,7 @@ object Mcts {
         val action = game.noAction
         Node[A, S](action, game.nextState(state, action), maybeParent = Some(node))
       }
-    }
+    })
 
     if(rootNode.children.isEmpty)
       rootNode

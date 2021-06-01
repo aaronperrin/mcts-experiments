@@ -16,7 +16,10 @@ case class CardGame() extends Game[CardGameAction, CardState] {
     action: CardGameAction
   ): CardState = {
     if(action == EndTurn) {
-      state.playEnemyActions.setupHeroTurn
+      state
+        .playEnemyActions
+        .setupEnemyPending
+        .setupHeroTurn
     }
     else {
       val updatedState = action.invoke(state)
@@ -26,10 +29,10 @@ case class CardGame() extends Game[CardGameAction, CardState] {
 
   override def reward(state: CardState): Double =
     if(state.enemies.nonEmpty) {
-      - state.prevHeroActions.length
+      - state.prevHeroActions.length - (state.hero.maxLife - state.hero.life)
     }
     else {
-      val value = state.deadEnemies.map(_.maxLife).reduce((a, b) => (a + b / (1 + state.prevHeroActions.length)))
+      val value = state.deadEnemies.length / (1 + state.prevHeroActions.length)
       value
     }
 
@@ -44,5 +47,5 @@ case class CardGame() extends Game[CardGameAction, CardState] {
     Nil
   )
 
-  override def noAction: CardGameAction = EndTurn
+  override def noAction: CardGameAction = NoAction
 }
