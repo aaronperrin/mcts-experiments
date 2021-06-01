@@ -30,6 +30,7 @@ case class CellsGame(maxMoves: Int = 25, initialState: CellsState) extends Game[
       case MoveDown => state.copy(posY = state.posY - 1)
       case MoveLeft => state.copy(posX = state.posX - 1)
       case MoveRight => state.copy(posX = state.posX + 1)
+      case NoAction => state
     }).copy(prevActions = state.prevActions :+ action)
   }
 

@@ -5,6 +5,7 @@ import scala.util.Random
 
 object Node {
   val rand = new Random(System.currentTimeMillis())
+  val epsilon : Double = 1e-6
 }
 
 case class Node[A, S](
@@ -58,30 +59,10 @@ case class Node[A, S](
       .getOrElse(this)
   }
 
-  def search(game: Game[A, S]): Node[A, S] = {
-    val actions = game.actions(state)
-    if(actions.nonEmpty && children.size < actions.length) {
-      // expand
-      val actionIndex = rand.nextInt(actions.length)
-      val action = actions(actionIndex)
-      val newState = game.nextState(state, action)
-      val newNode = Node[A, S](action, newState, maybeParent = Some(this))
-
-      // sim
-      val playoutState = newNode.playout(game)
-      val playoutReward = game.reward(playoutState)
-
-      // back prop
-      newNode.playouts = 1
-      newNode.totalReward = playoutReward
-      backprop(newNode, playoutReward)
+  def select = {
+    children.maxBy {
+      case (action, _) => ucb1(action)
     }
-    else if(actions.nonEmpty && children.nonEmpty)
-        children.maxBy {
-          case (action, _) => ucb1(action)
-        }._2.search(game)
-    else
-        top
   }
 
   def top : Node[A, S] = {
