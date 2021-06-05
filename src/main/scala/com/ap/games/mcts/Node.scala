@@ -34,7 +34,7 @@ case class Node[A, S](
 
   def bestChild = {
     children.maxBy {
-      case (_, child) => child.totalReward / child.playouts
+      case (_, child) => child.playouts
     }
   }
 

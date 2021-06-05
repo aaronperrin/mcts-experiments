@@ -2,13 +2,19 @@ package com.ap.games.cards
 
 import com.ap.games.mcts.Game
 
+import java.util.UUID
+
 case class CardGame() extends Game[CardGameAction, CardState] {
   val context = GameContext()
   override def actions(state: CardState): List[CardGameAction] =
-    if(state.hero.life > 0 && state.enemies.nonEmpty)
-      state.cards.hand.filter(_.energy < state.hero.energy) :+
+    if(state.hero.life > 0 && state.enemies.nonEmpty) {
+      val actions = state.cards.hand
+        .filter(_.energy <= state.hero.energy)
+        .flatMap(card => card.validTargets(state).map((card, _)))
+        .map(a => CardAction(a._1, a._2 :: Nil))
+      actions :+
         EndTurn
-    else
+    } else
       Nil
 
   override def nextState(
@@ -18,11 +24,14 @@ case class CardGame() extends Game[CardGameAction, CardState] {
     if(action == EndTurn) {
       state
         .playEnemyActions
-        .setupEnemyPending
+        .showNextEnemyActions
         .setupHeroTurn
     }
     else {
-      val updatedState = action.invoke(state)
+      val updatedState = action
+        .invoke(state)
+        .addPrevAction(action)
+        .clearDeadEnemies
       updatedState
     }
   }
@@ -32,7 +41,9 @@ case class CardGame() extends Game[CardGameAction, CardState] {
       0 - state.prevHeroActions.length - (state.hero.maxLife - state.hero.life)
     }
     else {
-      val value = state.deadEnemies.length + 1 / (1 + state.prevHeroActions.length) + state.hero.life / state.hero.maxLife
+      val value = state.deadEnemies.size +
+        1 / (1 + state.prevHeroActions.length) +
+        state.hero.life / state.hero.maxLife
       value
     }
 
@@ -42,8 +53,12 @@ case class CardGame() extends Game[CardGameAction, CardState] {
       context,
       (0 until 5).map(_ => Strike()).toList ++ (0 until 4).map(_ => Defend()).toList :+ Bash()
     ).shuffleAllIntoDraw.drawHand(5),
-    Enemy("Slime", 10, 10, Attack() :: Nil) :: Nil,
-    Nil,
+    (0 to 1).foldLeft(Map[UUID, Enemy]()) {
+      case (a, b) =>
+        val enemy = Enemy("Slime", 10, 10, 0, Attack() :: Nil)
+        a + (enemy.id -> enemy)
+    },
+    Map(),
     Nil
   )
 

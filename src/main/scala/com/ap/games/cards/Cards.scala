@@ -30,8 +30,8 @@ case class Cards(
 
   def shuffleDraw: Cards = copy(draw = context.random.shuffle(draw))
 
-  def discardCard(card: (Card, Int)): Cards = copy(
-    hand = hand.filter(_ != card._1),
-    discard = discard :+ card._1
+  def discard(card: Card): Cards = copy(
+    hand = hand.filter(_ != card),
+    discard = discard :+ card
   )
 }
