@@ -5,24 +5,20 @@ import com.ap.games.mcts.{Game, Mcts}
 import scala.util.Random
 
 case class QwixxAction(color:Int, num: Int) {
-  def isLockable = ((color == Qwixx.red || color == Qwixx.yellow) && num == 12) || ((color == Qwixx.green || color == Qwixx.blue) && num == 2)
+  import Qwixx._
+  def isLockable = ((color == Qwixx.Red || color == Qwixx.Yellow) && num == HighestSum) || ((color == Qwixx.Green || color == Qwixx.Blue) && num == LowestSum)
 }
 
 object NoAction extends QwixxAction(-1, -1)
 
 object PenaltyAction extends QwixxAction(-1, 0)
 
-case class QwixxScorecard(isCrossed: Map[Int, Map[Int, Boolean]] = Qwixx.initCrosses, penalties: Int = 0) {
-  import Qwixx._
-
-}
-
 case class QwixxGame() extends Game[QwixxAction, Qwixx] {
   import Qwixx._
 
   override def actions(state: Qwixx): List[QwixxAction] = {
     if(state.colorsLocked >= 2 || state.penalties >= 4)
-      NoAction :: Nil
+      Nil
     else {
       if(state.isActionOne)
         actionOneChoices(state) :+ NoAction
@@ -34,26 +30,26 @@ case class QwixxGame() extends Game[QwixxAction, Qwixx] {
   }
 
   def actionOneChoices(state: Qwixx): List[QwixxAction] = {
-    val whiteSum = state.dice(white1) + state.dice(white2)
-    (red to yellow)
+    val whiteSum = state.dice(White1) + state.dice(White2)
+    (Red to Yellow)
       .filter(!state.isLocked(_))
-      .filter(color => state.lowestCrossAvailable(color).exists(_ <= whiteSum))
+      .filter(color => state.lowestCrossAvailable(color) <= whiteSum)
       .map(color => QwixxAction(color, whiteSum)).toList ++
-      (green to blue)
+      (Green to Blue)
         .filter(!state.isLocked(_))
-        .filter(color => state.highestCrossAvailable(color).exists(_ >= whiteSum))
+        .filter(color => state.highestCrossAvailable(color) >= whiteSum)
         .map(color => QwixxAction(color, whiteSum)).toList
   }
 
   def actionTwoChoices(state: Qwixx): List[QwixxAction] = {
-    (red to blue).flatMap(color => {
+    (Red to Blue).flatMap(color => {
       if (!state.isLocked(color)) {
-        (white1 to white2).flatMap(white => {
+        (White1 to White2).flatMap(white => {
           val sum = state.dice(color) + state.dice(white)
-          if ((color == red || color == yellow) && state.lowestCrossAvailable(color).exists(_ <= sum)) {
+          if ((color == Red || color == Yellow) && state.lowestCrossAvailable(color) <= sum) {
             QwixxAction(color, sum) :: Nil
           }
-          else if ((color == green || color == blue) && state.highestCrossAvailable(color).exists(_ >= sum)) {
+          else if ((color == Green || color == Blue) && state.highestCrossAvailable(color) >= sum) {
             QwixxAction(color, sum) :: Nil
           }
           else Nil
@@ -66,11 +62,17 @@ case class QwixxGame() extends Game[QwixxAction, Qwixx] {
     state: Qwixx,
     action: QwixxAction
   ): Qwixx = {
-    if(action == PenaltyAction)
-      state.copy(penalties = state.penalties + 1, maybePrevAction = Some(action))
+    val updatedState = if(action == NoAction)
+      state.copy(isActionOne = !state.isActionOne, maybePrevAction = Some(action))
+    else if(action == PenaltyAction)
+      state.copy(penalties = state.penalties + 1, maybePrevAction = Some(action), isActionOne = !state.isActionOne)
     else {
-      state.cross(action)
+      state.crossOut(action).copy(isActionOne = !state.isActionOne, maybePrevAction = Some(action))
     }
+    if(updatedState.isActionOne)
+      updatedState.copy(dice = rollDice)
+    else
+      updatedState
   }
 
   override def reward(state: Qwixx): Double = state.score
@@ -81,54 +83,60 @@ case class QwixxGame() extends Game[QwixxAction, Qwixx] {
 }
 
 case class Qwixx(
-  isActivePlayer: Boolean = true,
   isActionOne: Boolean = true,
-  isCrossed: Map[Int, Map[Int, Boolean]] = Qwixx.initCrosses,
+  crossedOut: Map[Int, Map[Int, Boolean]] = Qwixx.initCrosses,
   penalties: Int = 0,
   dice: Map[Int, Int] = Qwixx.rollDice,
   maybePrevAction: Option[QwixxAction] = None
 ) {
   import Qwixx._
-  def colorsLocked: Int = (red to blue).count(color => isLocked(color))
-  def isLocked(color: Int) = isCrossed(color)(lock)
-  def cross(a: QwixxAction) = {
-    if((a.num == 2 && (a.color == green || a.color == blue)) || (a.num == 12 && (a.color == red || a.color == yellow)))
-      copy(isCrossed = isCrossed + (a.color -> (isCrossed(a.color) + (a.num -> true))))
-        .copy(isCrossed = isCrossed + (a.color -> (isCrossed(a.color) + (lock -> true))))
+  def colorsLocked: Int = (Red to Blue).count(color => isLocked(color))
+  def isLocked(color: Int) = crossedOut(color)(Lock)
+  def crossOut(a: QwixxAction) = {
+    if((a.num == LowestSum && (a.color == Green || a.color == Blue)) || (a.num == HighestSum && (a.color == Red || a.color == Yellow)))
+      copy(crossedOut = crossedOut + (a.color -> (crossedOut(a.color) + (a.num -> true) + (Lock -> true))))
     else
-      copy(isCrossed = isCrossed + (a.color -> (isCrossed(a.color) + (a.num -> true))))
+      copy(crossedOut = crossedOut + (a.color -> (crossedOut(a.color) + (a.num -> true))))
   }
-  def lowestCrossAvailable(color: Int): Option[Int] = {
-    (12 to 2).find(num => isCrossed(color)(num)).map(_ + 1)
+  def lowestCrossAvailable(color: Int): Int = {
+    (HighestSum to LowestSum).find(num => crossedOut(color)(num)).map(_ + 1).getOrElse(LowestSum)
   }
-  def highestCrossAvailable(color: Int): Option[Int] = {
-    (2 to 12).find(num => isCrossed(color)(num)).map(_ - 1)
+  def highestCrossAvailable(color: Int): Int = {
+    (LowestSum to HighestSum).find(num => crossedOut(color)(num)).map(_ - 1).getOrElse(HighestSum)
   }
   def score = {
-    (red to blue).map(color => scoringTable(isCrossed(color).values.count(_ == true))).sum - penalties * 5
+    (Red to Blue).map(color => ScoringTable(crossedOut(color).values.count(_ == true))).sum - penalties * 5
   }
 }
 
 object Qwixx {
 
-  val rand: Random = new Random()
+  val Rand: Random = new Random(0L)
 
-  val red = 0
-  val yellow = 1
-  val green = 2
-  val blue = 3
-  val white1 = 4
-  val white2 = 5
-  val lock = 13
+  val Red = 0
+  val Yellow = 1
+  val Green = 2
+  val Blue = 3
+  val White1 = 4
+  val White2 = 5
+  val Lock = 13
+  val LowestSum = 2
+  val HighestSum = 12
 
-  def initCrosses = (Qwixx.red to Qwixx.blue).foldLeft(Map[Int, Map[Int, Boolean]]()) {
-    case (map, color) => map + (color -> (2 to lock).foldLeft(Map[Int, Boolean]()) {
+  val ScoringTable = (1 to 12).foldLeft(Map[Int, Int]()) {
+    case (map, num) => map + (num -> (1 to num).sum)
+  }
+
+  def initCrosses = (Qwixx.Red to Qwixx.Blue).foldLeft(Map[Int, Map[Int, Boolean]]()) {
+    case (map, color) => map + (color -> (LowestSum to Lock).foldLeft(Map[Int, Boolean]()) {
       case (map, num) => map + (num -> false)
     })
   }
 
-  val scoringTable = (2 to 12).foldLeft(Map[Int, Int]()) {
-    case (map, num) => map + (num -> (1 to num).sum)
+  def rollDice: Map[Int, Int] = {
+    (Red to White2).foldLeft(Map[Int, Int]()) {
+      case (map, color) => map + (color -> (Rand.nextInt(6) + 1))
+    }
   }
 
   def main(args: Array[String]): Unit = {
@@ -139,12 +147,6 @@ object Qwixx {
       curState = game.nextState(curState, node.action)
       node = Mcts.bestMove(game, curState)
       println(node.action, curState)
-    }
-  }
-
-  def rollDice: Map[Int, Int] = {
-    (red to white2).foldLeft(Map[Int, Int]()) {
-      case (map, color) => map + (color -> (rand.nextInt(6) + 1))
     }
   }
 }
