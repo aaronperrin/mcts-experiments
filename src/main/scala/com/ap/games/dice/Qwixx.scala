@@ -17,16 +17,22 @@ case class QwixxGame() extends Game[QwixxAction, Qwixx] {
   import Qwixx._
 
   override def actions(state: Qwixx): List[QwixxAction] = {
-    if(state.colorsLocked >= 2 || state.penalties >= 4)
+    val a = if(state.colorsLocked >= 2 || state.penalties >= 4)
       Nil
     else {
       if(state.isActionOne)
         actionOneChoices(state) :+ NoAction
       else if(state.maybePrevAction.isDefined && state.maybePrevAction.get == NoAction)
         actionTwoChoices(state) :+ PenaltyAction
-      else
-        actionTwoChoices(state)
+      else {
+        val choices = actionTwoChoices(state)
+        if(choices.isEmpty)
+          PenaltyAction :: Nil
+        else
+          choices
+      }
     }
+    a
   }
 
   def actionOneChoices(state: Qwixx): List[QwixxAction] = {
@@ -42,20 +48,24 @@ case class QwixxGame() extends Game[QwixxAction, Qwixx] {
   }
 
   def actionTwoChoices(state: Qwixx): List[QwixxAction] = {
-    (Red to Blue).flatMap(color => {
+    var actions = Set[QwixxAction]()
+    (Red to Blue).foreach(color => {
       if (!state.isLocked(color)) {
-        (White1 to White2).flatMap(white => {
+        (White1 to White2).foreach(white => {
           val sum = state.dice(color) + state.dice(white)
-          if ((color == Red || color == Yellow) && state.lowestCrossAvailable(color) <= sum) {
-            QwixxAction(color, sum) :: Nil
+          val action = QwixxAction(color, sum)
+          if(!actions.contains(action)) {
+            if ((color == Red || color == Yellow) && state.lowestCrossAvailable(color) <= sum) {
+              actions = actions + action
+            }
+            else if ((color == Green || color == Blue) && state.highestCrossAvailable(color) >= sum) {
+              actions = actions + action
+            }
           }
-          else if ((color == Green || color == Blue) && state.highestCrossAvailable(color) >= sum) {
-            QwixxAction(color, sum) :: Nil
-          }
-          else Nil
         })
-      } else Nil
-    }).toList
+      }
+    })
+    actions.toList
   }
 
   override def nextState(
@@ -99,19 +109,25 @@ case class Qwixx(
       copy(crossedOut = crossedOut + (a.color -> (crossedOut(a.color) + (a.num -> true))))
   }
   def lowestCrossAvailable(color: Int): Int = {
-    (HighestSum to LowestSum).find(num => crossedOut(color)(num)).map(_ + 1).getOrElse(LowestSum)
+    (HighestSum to LowestSum by -1).find(num => crossedOut(color)(num)).map(_ + 1).getOrElse(LowestSum)
   }
   def highestCrossAvailable(color: Int): Int = {
     (LowestSum to HighestSum).find(num => crossedOut(color)(num)).map(_ - 1).getOrElse(HighestSum)
   }
   def score = {
-    (Red to Blue).map(color => ScoringTable(crossedOut(color).values.count(_ == true))).sum - penalties * 5
+    (Red to Blue).map(color => {
+      val numCrossedOut = crossedOut(color).values.count(_ == true)
+      if(numCrossedOut > 0)
+        ScoringTable(numCrossedOut)
+      else
+        0
+    }).sum - penalties * 5
   }
 }
 
 object Qwixx {
 
-  val Rand: Random = new Random(0L)
+  val Rand: Random = new Random(1L)
 
   val Red = 0
   val Yellow = 1
@@ -144,9 +160,12 @@ object Qwixx {
     var curState = game.initialState
     var node = Mcts.bestMove(game, curState)
     while(node.action != game.noAction) {
+      println(curState)
+      println(node.action)
       curState = game.nextState(curState, node.action)
       node = Mcts.bestMove(game, curState)
-      println(node.action, curState)
+      println(game.reward(curState))
+      println(node.bestPath)
     }
   }
 }
