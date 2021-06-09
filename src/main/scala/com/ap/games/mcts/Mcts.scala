@@ -1,7 +1,7 @@
 package com.ap.games.mcts
 
 object Mcts {
-  def bestMove[A, S](game: Game[A, S], startState: S, maxIterations: Int = 1000): Node[A, S] = {
+  def bestMove[A, S](game: Game[A, S], startState: S, maxIterations: Int = 10000): Node[A, S] = {
     val rootNode: Node[A, S] = Node[A, S](game.noAction, startState)
 
     (1 to maxIterations).foreach(_ => {

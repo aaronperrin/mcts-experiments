@@ -4,8 +4,7 @@ import scala.annotation.tailrec
 import scala.util.Random
 
 object Node {
-  val rand = new Random(System.currentTimeMillis())
-  val epsilon : Double = 1e-6
+  val rand = new Random(1L)
 }
 
 case class Node[A, S](
