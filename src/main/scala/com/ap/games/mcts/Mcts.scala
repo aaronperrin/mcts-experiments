@@ -10,7 +10,7 @@ object Mcts {
       var state = rootNode.state
       var actions = game.actions(state)
       while(actions.nonEmpty && node.children.size == actions.length) {
-        node = node.select._2
+        node = node.select(game.selectionConstant)
         state = node.state
         actions = game.actions(state)
       }

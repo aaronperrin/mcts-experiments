@@ -26,9 +26,12 @@ case class Node[A, S](
        |""".stripMargin
   }
 
-  def ucb1(childAction: A) = {
+  def ucb1(parentPlayouts: Int, selectionConstant: Double) =
+    totalReward / playouts + selectionConstant * Math.sqrt(Math.log(parentPlayouts) / playouts)
+
+  def ucb1(childAction: A, selectionConstant: Double) = {
     val child = children(childAction)
-    child.totalReward / child.playouts + 1.414 * Math.sqrt(Math.log(playouts) / child.playouts)
+    child.totalReward / child.playouts + selectionConstant * Math.sqrt(Math.log(playouts) / child.playouts)
   }
 
   def bestChild = {
@@ -58,10 +61,10 @@ case class Node[A, S](
       .getOrElse(this)
   }
 
-  def select = {
+  def select(selectionConstant: Double) = {
     children.maxBy {
-      case (action, _) => ucb1(action)
-    }
+      case (action, _) => ucb1(action, selectionConstant)
+    }._2
   }
 
   def top : Node[A, S] = {
