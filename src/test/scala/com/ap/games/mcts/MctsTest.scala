@@ -1,6 +1,6 @@
 package com.ap.games.mcts
 
-import com.ap.games.cells.{CellsGame, CellsState, MoveRight, MoveUp}
+import com.ap.games.cells.{CellsGame, CellsState, MoveDown, MoveLeft, MoveRight, MoveUp}
 import org.junit.runner.RunWith
 import org.scalatest.funsuite.AnyFunSuite
 import org.scalatestplus.junit.JUnitRunner
@@ -29,5 +29,13 @@ class MctsTest extends AnyFunSuite {
     val node = Mcts.bestMove(game, curState)
     val bestAction = node.action
     assert(bestAction == MoveUp || bestAction == MoveRight)
+  }
+
+  test("test really big grid") {
+    val game = CellsGame(initialState = CellsState(min = -100, max = 100, posX = 10, posY = 10, targetX = -9, targetY = -9))
+    val curState = game.initialState
+    val node = Mcts.bestMove(game, curState)
+    val bestAction = node.action
+    assert(bestAction == MoveDown || bestAction == MoveLeft)
   }
 }
