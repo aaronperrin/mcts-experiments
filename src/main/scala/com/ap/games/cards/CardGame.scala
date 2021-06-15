@@ -38,7 +38,8 @@ case class CardGame() extends Game[CardGameAction, CardState] {
 
   override def reward(state: CardState): Double = {
     val lifeLost = state.hero.maxLife - state.hero.life
-    val score = Math.max(0, state.deadEnemies.values.map(_.maxLife).sum + state.deadEnemies.size - Math.log(lifeLost) - Math.log(state.prevHeroActions.length * state.prevHeroActions.length))
+    val variance = lifeLost / state.hero.maxLife
+    val score = Math.max(0, state.deadEnemies.values.map(_.maxLife).sum + state.deadEnemies.size - variance)
     score / state.maxReward
   }
 
