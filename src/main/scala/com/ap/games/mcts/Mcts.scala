@@ -4,7 +4,7 @@ object Mcts {
   def bestMove[A, S](game: Game[A, S], startState: S, maxIterations: Int = 10000): Node[A, S] = {
     val rootNode: Node[A, S] = Node[A, S](game.noAction, startState)
 
-    (1 to maxIterations).foreach(_ => {
+    (1 to maxIterations).foreach(i => {
       // select
       var node = rootNode
       var state = rootNode.state
@@ -15,33 +15,29 @@ object Mcts {
         actions = game.actions(state)
       }
 
-      if(actions.nonEmpty) {
-        // expand
-        val action = actions.find(a => {
-          val v = !node.children.contains(a)
-          v
-        }).get
-        val newState = game.nextState(state, action)
-        val newNode = Node[A, S](action, newState, maybeParent = Some(node))
+      // expand
+      val action = actions.find(a => {
+        val v = !node.children.contains(a)
+        v
+      }).getOrElse(game.noAction)
 
-        // sim
-        val playoutState = newNode.playout(game)
-        val playoutReward = game.reward(playoutState)
+      val newState = game.nextState(state, action)
+      val newNode = Node[A, S](action, newState, maybeParent = Some(node))
 
-        // back prop
-        newNode.playouts = 1
-        newNode.totalReward = playoutReward
-        node.backprop(newNode, playoutReward)
-      }
-      else {
-        val action = game.noAction
-        Node[A, S](action, game.nextState(state, action), maybeParent = Some(node))
-      }
+      // sim
+      val playoutState = newNode.playout(game)
+      val playoutReward = game.reward(playoutState)
+
+      // back prop
+      newNode.playouts = 1
+      newNode.totalReward = playoutReward
+      node.backprop(newNode, playoutReward)
+
     })
 
     if(rootNode.children.isEmpty)
       rootNode
     else
-      rootNode.bestChild._2
+      rootNode.bestChild(game.selectionMethod)._2
   }
 }

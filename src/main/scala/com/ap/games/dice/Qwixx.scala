@@ -85,7 +85,9 @@ case class QwixxGame() extends Game[QwixxAction, Qwixx] {
       updatedState
   }
 
-  override def reward(state: Qwixx): Double = state.score
+  val maxReward = 78 * 2d
+
+  override def reward(state: Qwixx): Double = Math.max(state.score, 0) / maxReward
 
   override def initialState: Qwixx = Qwixx()
 
@@ -164,8 +166,8 @@ object Qwixx {
       println(node.action)
       curState = game.nextState(curState, node.action)
       node = Mcts.bestMove(game, curState)
-      println(game.reward(curState))
-      println(node.bestPath)
+      println(game.reward(curState) * game.maxReward)
+      println(node.bestPath(game))
     }
   }
 }

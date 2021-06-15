@@ -36,16 +36,11 @@ case class CardGame() extends Game[CardGameAction, CardState] {
     }
   }
 
-  override def reward(state: CardState): Double =
-    if(state.enemies.nonEmpty) {
-      0 - state.prevHeroActions.length - (state.hero.maxLife - state.hero.life)
-    }
-    else {
-      val value = state.deadEnemies.size +
-        1 / (1 + state.prevHeroActions.length) +
-        state.hero.life / state.hero.maxLife
-      value
-    }
+  override def reward(state: CardState): Double = {
+    val lifeLost = state.hero.maxLife - state.hero.life
+    val score = Math.max(0, state.deadEnemies.values.map(_.maxLife).sum + state.deadEnemies.size - Math.log(lifeLost) - Math.log(state.prevHeroActions.length * state.prevHeroActions.length))
+    score / state.maxReward
+  }
 
   override def initialState: CardState = CardState(
     Hero(24, 24, 3, 3, 0, 5),

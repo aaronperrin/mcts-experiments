@@ -12,6 +12,7 @@ case class Node[A, S](
   state: S,
   maybeParent: Option[Node[A, S]] = None
 ) {
+
   import Node._
   var children: Map[A, Node[A, S]] = Map.empty
   var playouts: Int = 0
@@ -26,27 +27,24 @@ case class Node[A, S](
        |""".stripMargin
   }
 
-  def ucb1(parentPlayouts: Int, selectionConstant: Double) =
-    totalReward / playouts + selectionConstant * Math.sqrt(Math.log(parentPlayouts) / playouts)
-
   def ucb1(childAction: A, selectionConstant: Double) = {
     val child = children(childAction)
     child.totalReward / child.playouts + selectionConstant * Math.sqrt(Math.log(playouts) / child.playouts)
   }
 
-  def bestChild = {
+  def bestChild(method: SelectMethod) = {
     children.maxBy {
       case (_, child) => child.playouts
     }
   }
 
-  def bestPath: List[A] = bestPath(Nil)
+  def bestPath(game: Game[A, S]): List[A] = bestPath(game, Nil)
 
   @tailrec
-  private def bestPath(path: List[A] = Nil): List[A] = {
+  private def bestPath(game: Game[A, S], path: List[A] = Nil): List[A] = {
     if(playouts > 1) {
-      val child = bestChild
-      child._2.bestPath(path :+ child._1)
+      val child = bestChild(game.selectionMethod)
+      child._2.bestPath(game, path :+ child._1)
     }
     else
       path

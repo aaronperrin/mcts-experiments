@@ -4,6 +4,8 @@ import java.util.UUID
 import scala.annotation.tailrec
 
 case class CardState(hero: Hero, cards: Cards, enemies: Map[UUID, Enemy], deadEnemies: Map[UUID, Enemy], prevHeroActions: List[CardGameAction]) {
+  val maxReward = enemies.values.map(_.maxLife).sum + enemies.size
+
   def addPrevAction(action: CardGameAction): CardState = copy(prevHeroActions = prevHeroActions :+ action)
 
   def nextEnemyWithAction: Option[Enemy] = enemies.values.find(_.pendingActions.nonEmpty)

@@ -1,6 +1,5 @@
 package com.ap.games.mcts
 
-import com.ap.games.cells.CellsMain.{curState, game}
 import com.ap.games.cells.{CellsGame, CellsState, MoveRight, MoveUp}
 import org.junit.runner.RunWith
 import org.scalatest.funsuite.AnyFunSuite
