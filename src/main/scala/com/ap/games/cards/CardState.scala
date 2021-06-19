@@ -4,7 +4,28 @@ import java.util.UUID
 import scala.annotation.tailrec
 
 case class CardState(hero: Hero, cards: Cards, enemies: Map[UUID, Enemy], deadEnemies: Map[UUID, Enemy], prevHeroActions: List[CardGameAction]) {
-  val maxReward: Double = enemies.values.map(_.maxLife).sum + deadEnemies.values.map(_.maxLife).sum + enemies.size + deadEnemies.size
+  override def toString: String = {
+    val sb = new StringBuilder()
+    sb.append(s"Hero (${hero.life} / ${hero.maxLife} | ${hero.armor} | ${hero.energy} | ${hero.cardsPerTurn} | ${hero.effects.length}), ")
+    cards.hand.foreach(card => {
+      sb.append(s"${card.getClass.getSimpleName}, ")
+    })
+    enemies.foreach(enemy => {
+      sb.append(s"${enemy._2.name} (${enemy._2.life} / ${enemy._2.maxLife} | ${enemy._2.armor} | ${enemy._2.pendingActions} | ${enemy._2.effects}), ")
+    })
+    sb.toString()
+  }
+  
+  def reward = {
+    val lifeVar = (hero.maxLife - hero.life) / hero.maxLife.toDouble
+    val totalEnemyLife = deadEnemies.values.map(_.maxLife).sum + enemies.values.map(_.maxLife).sum
+    val currentEnemyLife = enemies.values.map(_.life).sum
+    val enemyVar = (totalEnemyLife - currentEnemyLife) / totalEnemyLife.toDouble
+    val score = Math.max(0, enemyVar - lifeVar)
+    score / maxReward
+  }
+
+  val maxReward: Double = 1
 
   def addPrevAction(action: CardGameAction): CardState = copy(prevHeroActions = prevHeroActions :+ action)
 

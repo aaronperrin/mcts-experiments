@@ -4,11 +4,11 @@ import scala.annotation.tailrec
 import scala.util.Random
 
 object Mcts {
-  def bestAction[S, A](game: Game[S, A]): Option[A] = {
+  def playout[S, A](game: Game[S, A]): Node[S, A] = {
     val mcts = Mcts[S, A](1L) _
-    Runner(maxIterations = 1000)(game.initialNode)(
+    Runner(maxIterations = 10000)(game.initialNode)(
       node => mcts(game).select(node)
-    ).bestAction
+    )
   }
 }
 

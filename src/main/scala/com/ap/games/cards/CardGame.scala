@@ -34,9 +34,8 @@ case class CardGame(override val initialState: CardState) extends Game[CardState
   }
 
   override def reward(state: CardState): Double = {
-    val lifeLost = state.hero.maxLife - state.hero.life
-    val variance = lifeLost / state.hero.maxLife.toDouble
-    val score = Math.max(0, state.deadEnemies.values.map(_.maxLife).sum + state.deadEnemies.size - variance)
-    score / state.maxReward
+    state.reward
   }
+
+  override def explorationConstant: Double = super.explorationConstant * 2
 }

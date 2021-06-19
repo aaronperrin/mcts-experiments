@@ -157,13 +157,15 @@ object Qwixx {
   def main(args: Array[String]): Unit = {
     var state = Qwixx()
     var game = QwixxGame(state)
-    var maybeAction = Mcts.bestAction(game)
+    var result = Mcts.playout(game)
+    var maybeAction = result.bestAction
     while (maybeAction.isDefined) {
       state = game.nextState(maybeAction.get, state)
       println(maybeAction.get, state)
       println(game.reward(state) * game.maxReward)
       game = QwixxGame(state)
-      maybeAction = Mcts.bestAction(game)
+      result = Mcts.playout(game)
+      maybeAction = result.bestAction
     }
   }
 }

@@ -9,6 +9,13 @@ trait CardGameAction {
 
 case class CardAction(card: Card, override val targets: List[CardTarget]) extends CardGameAction {
   override def invoke(state: CardState): CardState = card.invoke(state, targets)
+
+  override def toString: String = {
+    val sb = new StringBuilder()
+    sb.append(s"${card.getClass.getSimpleName} -> ")
+    targets.foreach(target => sb.append(s"${target.getClass.getSimpleName}, "))
+    sb.toString()
+  }
 }
 
 abstract class Card(val energy: Int, val effects: List[Effect]) {
