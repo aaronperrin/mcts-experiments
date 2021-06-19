@@ -1,43 +1,58 @@
 package com.ap.games.mcts
 
+import scala.annotation.tailrec
+import scala.util.Random
+
 object Mcts {
-  def bestMove[A, S](game: Game[A, S], startState: S, maxIterations: Int = 10000): Node[A, S] = {
-    val rootNode: Node[A, S] = Node[A, S](game.noAction, startState)
-
-    (1 to maxIterations).foreach(i => {
-      // select
-      var node = rootNode
-      var state = rootNode.state
-      var actions = game.actions(state)
-      while(actions.nonEmpty && node.children.size == actions.length) {
-        node = node.select(game.selectionConstant)
-        state = node.state
-        actions = game.actions(state)
-      }
-
-      // expand
-      val action = actions.find(a => {
-        val v = !node.children.contains(a)
-        v
-      }).getOrElse(game.noAction)
-
-      val newState = game.nextState(state, action)
-      val newNode = Node[A, S](action, newState, maybeParent = Some(node))
-
-      // sim
-      val playoutState = newNode.playout(game)
-      val playoutReward = game.reward(playoutState)
-
-      // back prop
-      newNode.playouts = 1
-      newNode.totalReward = playoutReward
-      node.backprop(newNode, playoutReward)
-
-    })
-
-    if(rootNode.children.isEmpty)
-      rootNode
-    else
-      rootNode.bestChild(game.selectionMethod)._2
+  def bestAction[S, A](game: Game[S, A]): Option[A] = {
+    val mcts = Mcts[S, A](1L) _
+    Runner(maxIterations = 1000)(game.initialNode)(
+      node => mcts(game).select(node)
+    ).bestAction
   }
+}
+
+case class Mcts[S, A](seed: Long)(game: Game[S, A]) {
+  val rand = new Random(seed)
+
+  def ucb1(parent: Node[S, A], child: Node[S, A]) = {
+    child.totalReward / child.playouts + game.explorationConstant * Math
+      .sqrt(Math.log(parent.playouts) / child.playouts)
+  }
+
+  def select(node: Node[S, A]): Node[S, A] =
+    game.status(node.state) match {
+      case GameOver(state) =>
+        node.reward(game.reward(state))
+      case Ongoing(state) =>
+        game.actions(state).find(a => !node.children.contains(a)) match {
+          case Some(action) =>
+            node.backprop(action, expand(node, action))
+          case None =>
+            val (action, actionNode: Node[S, A]) = node.children.maxBy {
+              case (_, childNode) => ucb1(node, childNode)
+            }
+            node.backprop(action, select(actionNode))
+        }
+    }
+
+  private def expand(
+    node: Node[S, A],
+    action: A
+  ): Node[S, A] = {
+    val nextState: S = game.nextState(action, node.state)
+    val playoutResult: S = playout(nextState)
+    val payout: Double = game.reward(playoutResult)
+    Node.from(nextState, payout)
+  }
+
+  @tailrec
+  private def playout(state: S): S =
+    game.status(state) match {
+      case GameOver(state) => state
+      case Ongoing(state) =>
+        val actions = game.actions(state)
+        val randomAction = actions(rand.nextInt(actions.length))
+        playout(game.nextState(randomAction, state))
+    }
 }

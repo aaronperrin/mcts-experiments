@@ -3,9 +3,7 @@ package com.ap.games.cells
 import com.ap.games.mcts.Game
 
 
-case class CellsGame(maxMoves: Int = 25, initialState: CellsState) extends Game[CellGameAction, CellsState] {
-
-  override def noAction: CellGameAction = NoAction
+case class CellsGame(maxMoves: Int = 25, initialState: CellsState) extends Game[CellsState, CellGameAction] {
 
   override def actions(state: CellsState): List[CellGameAction] = {
     if(state.posX == state.targetX && state.posY == state.targetY)
@@ -24,7 +22,7 @@ case class CellsGame(maxMoves: Int = 25, initialState: CellsState) extends Game[
     )
   }
 
-  override def nextState(state: CellsState, action: CellGameAction): CellsState = {
+  override def nextState(action: CellGameAction, state: CellsState): CellsState = {
     (action match {
       case MoveUp => state.copy(posY = state.posY + 1)
       case MoveDown => state.copy(posY = state.posY - 1)

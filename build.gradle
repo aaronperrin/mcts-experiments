@@ -12,6 +12,7 @@ repositories {
 
 dependencies {
     implementation 'org.scala-lang:scala-library:2.13.4'
+    implementation group: 'org.scala-lang.modules', name: 'scala-parallel-collections_2.13', version: '1.0.3'
 
     testRuntimeOnly 'org.scala-lang.modules:scala-xml_2.13:1.2.0'
 

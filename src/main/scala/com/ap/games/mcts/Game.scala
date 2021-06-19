@@ -1,15 +1,28 @@
 package com.ap.games.mcts
 
-sealed trait SelectMethod
-case object MaxChild extends SelectMethod
-case object RobustChild extends SelectMethod
+trait Game[S, A] {
+  val initialNode: Node[S, A] = Node.from(initialState)
 
-trait Game[A, S] {
-  def selectionConstant: Double = Math.sqrt(2)
-  def selectionMethod: SelectMethod = RobustChild
-  def actions(state: S): List[A]
-  def nextState(state: S, action: A): S
-  def reward(state: S): Double
+  def explorationConstant: Double = Math.sqrt(2)
+
   def initialState: S
-  def noAction: A
+
+  def nextState(action: A, state: S): S
+
+  def reward(state: S): Double
+
+  def actions(state: S): List[A]
+
+  def status(state: S): GameStatus[S] = {
+    actions(state) match {
+      case Nil => GameOver(state)
+      case _ => Ongoing(state)
+    }
+  }
 }
+
+sealed trait GameStatus[+S]
+
+case class Ongoing[S](state: S) extends GameStatus[S]
+
+case class GameOver[S](state: S) extends GameStatus[S]

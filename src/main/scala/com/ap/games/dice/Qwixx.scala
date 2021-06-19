@@ -1,8 +1,9 @@
 package com.ap.games.dice
 
-import com.ap.games.mcts.{Game, Mcts}
+import com.ap.games.mcts.{Game, Mcts, Runner}
 
 import scala.util.Random
+
 
 case class QwixxAction(color:Int, num: Int) {
   import Qwixx._
@@ -13,7 +14,7 @@ object NoAction extends QwixxAction(-1, -1)
 
 object PenaltyAction extends QwixxAction(-1, 0)
 
-case class QwixxGame() extends Game[QwixxAction, Qwixx] {
+case class QwixxGame(override val initialState: Qwixx = Qwixx()) extends Game[Qwixx, QwixxAction] {
   import Qwixx._
 
   override def actions(state: Qwixx): List[QwixxAction] = {
@@ -69,8 +70,8 @@ case class QwixxGame() extends Game[QwixxAction, Qwixx] {
   }
 
   override def nextState(
-    state: Qwixx,
-    action: QwixxAction
+    action: QwixxAction,
+    state: Qwixx
   ): Qwixx = {
     val updatedState = if(action == NoAction)
       state.copy(isActionOne = !state.isActionOne, maybePrevAction = Some(action))
@@ -88,10 +89,6 @@ case class QwixxGame() extends Game[QwixxAction, Qwixx] {
   val maxReward = 78 * 2d
 
   override def reward(state: Qwixx): Double = Math.max(state.score, 0) / maxReward
-
-  override def initialState: Qwixx = Qwixx()
-
-  override def noAction: QwixxAction = QwixxAction(-1, -1)
 }
 
 case class Qwixx(
@@ -158,16 +155,15 @@ object Qwixx {
   }
 
   def main(args: Array[String]): Unit = {
-    val game = QwixxGame()
-    var curState = game.initialState
-    var node = Mcts.bestMove(game, curState)
-    while(node.action != game.noAction) {
-      println(curState)
-      println(node.action)
-      curState = game.nextState(curState, node.action)
-      node = Mcts.bestMove(game, curState)
-      println(game.reward(curState) * game.maxReward)
-      println(node.bestPath(game))
+    var state = Qwixx()
+    var game = QwixxGame(state)
+    var maybeAction = Mcts.bestAction(game)
+    while (maybeAction.isDefined) {
+      state = game.nextState(maybeAction.get, state)
+      println(maybeAction.get, state)
+      println(game.reward(state) * game.maxReward)
+      game = QwixxGame(state)
+      maybeAction = Mcts.bestAction(game)
     }
   }
 }

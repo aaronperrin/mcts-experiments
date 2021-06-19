@@ -1,89 +1,67 @@
 package com.ap.games.mcts
 
-import scala.annotation.tailrec
-import scala.util.Random
 
-object Node {
-  val rand = new Random(1L)
-}
-
-case class Node[A, S](
-  action: A,
+case class Node[S, A](
   state: S,
-  maybeParent: Option[Node[A, S]] = None
+  totalReward: Double,
+  playouts: Int,
+  children: Map[A, Node[S, A]],
+  lastPayout: Double
 ) {
 
-  import Node._
-  var children: Map[A, Node[A, S]] = Map.empty
-  var playouts: Int = 0
-  var totalReward: Double = 0
-  var descendants: Int = 0
+  def backprop(action: A, newChild: Node[S, A]): Node[S, A] =
+    copy(
+      children = children.updated(action, newChild),
+      totalReward = totalReward + newChild.lastPayout,
+      playouts = playouts + 1,
+      lastPayout = newChild.lastPayout
+    )
 
-  override def toString: String = {
-    s"""
-       |$action -> $state
-       |$totalReward / $playouts
-       |${maybeParent.map(_.action)}
-       |""".stripMargin
-  }
+  def reward(payout: Double): Node[S, A] =
+    copy(
+      totalReward = totalReward + payout,
+      playouts = playouts + 1,
+      lastPayout = payout
+    )
 
-  def ucb1(childAction: A, selectionConstant: Double) = {
-    val child = children(childAction)
-    child.totalReward / child.playouts + selectionConstant * Math.sqrt(Math.log(playouts) / child.playouts)
-  }
-
-  def bestChild(method: SelectMethod) = {
-    children.maxBy {
-      case (_, child) => child.playouts
-    }
-  }
-
-  def bestPath(game: Game[A, S]): List[A] = bestPath(game, Nil)
-
-  @tailrec
-  private def bestPath(game: Game[A, S], path: List[A] = Nil): List[A] = {
-    if(playouts > 1) {
-      val child = bestChild(game.selectionMethod)
-      child._2.bestPath(game, path :+ child._1)
-    }
+  def bestAction: Option[A] = {
+    if (children.nonEmpty)
+      Some(children.maxBy { case (_, child) => child.playouts }._1)
     else
-      path
+      None
   }
+}
 
-  def backprop(child: Node[A, S], reward: Double): Node[A, S] = {
-    totalReward = totalReward + reward
-    playouts = playouts + 1
-    children = children + (child.action -> child)
-    maybeParent
-      .map(parent => parent.backprop(this, reward))
-      .getOrElse(this)
-  }
+object Node {
+  def from[S, A](state: S): Node[S, A] = Node(state, 0, 0, Map.empty, 0)
 
-  def select(selectionConstant: Double) = {
-    children.maxBy {
-      case (action, _) => ucb1(action, selectionConstant)
-    }._2
-  }
+  def from[S, A](state: S, payout: Double): Node[S, A] =
+    Node(
+      state = state,
+      totalReward = payout,
+      playouts = 1,
+      children = Map.empty,
+      lastPayout = payout
+    )
 
-  def top : Node[A, S] = {
-    var child = this
-    var parent = maybeParent
-    while(parent.isDefined) {
-      child = parent.get
-      parent = parent.get.maybeParent
+  def combine[S, A](x: Node[S, A], y: Node[S, A]): Node[S, A] =
+    Node(
+      state = x.state,
+      totalReward = x.totalReward + y.totalReward,
+      playouts = x.playouts + y.playouts,
+      children = combineChildren(x.children, y.children),
+      lastPayout = x.lastPayout + y.lastPayout
+    )
+
+  def combineChildren[S, A](a: Map[A, Node[S, A]], b: Map[A, Node[S, A]]): Map[A, Node[S, A]] = {
+    val ret = Map.newBuilder[A, Node[S, A]]
+    ret ++= a
+
+    b.foreach {
+      case (action, node) =>
+        val combinedNode: Node[S, A] = if (a.contains(action)) combine(a(action), node) else node
+        ret += (action -> combinedNode)
     }
-    child
-  }
-
-  def playout(game: Game[A, S]): S = {
-    var curState = state
-    var actions = game.actions(curState)
-    while(actions.nonEmpty) {
-      val randIndex = rand.nextInt(actions.length)
-      val action = actions(randIndex)
-      curState = game.nextState(curState, action)
-      actions = game.actions(curState)
-    }
-    curState
+    ret.result()
   }
 }

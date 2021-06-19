@@ -2,10 +2,7 @@ package com.ap.games.cards
 
 import com.ap.games.mcts.Game
 
-import java.util.UUID
-
-case class CardGame() extends Game[CardGameAction, CardState] {
-  val context = GameContext()
+case class CardGame(override val initialState: CardState) extends Game[CardState, CardGameAction] {
   override def actions(state: CardState): List[CardGameAction] =
     if(state.hero.life > 0 && state.enemies.nonEmpty) {
       val actions = state.cards.hand
@@ -18,8 +15,8 @@ case class CardGame() extends Game[CardGameAction, CardState] {
       Nil
 
   override def nextState(
-    state: CardState,
-    action: CardGameAction
+    action: CardGameAction,
+    state: CardState
   ): CardState = {
     if(action == EndTurn) {
       state
@@ -42,21 +39,4 @@ case class CardGame() extends Game[CardGameAction, CardState] {
     val score = Math.max(0, state.deadEnemies.values.map(_.maxLife).sum + state.deadEnemies.size - variance)
     score / state.maxReward
   }
-
-  override def initialState: CardState = CardState(
-    Hero(24, 24, 3, 3, 0, 5),
-    Cards(
-      context,
-      (0 until 5).map(_ => Strike()).toList ++ (0 until 4).map(_ => Defend()).toList :+ Bash()
-    ).shuffleAllIntoDraw.drawHand(5),
-    (0 to 1).foldLeft(Map[UUID, Enemy]()) {
-      case (a, b) =>
-        val enemy = Enemy("Slime", 10, 10, 0, Attack() :: Nil)
-        a + (enemy.id -> enemy)
-    },
-    Map(),
-    Nil
-  )
-
-  override def noAction: CardGameAction = NoAction
 }
