@@ -14,9 +14,24 @@ object CardMain {
       context,
       (0 until 5).map(_ => Strike()).toList ++ (0 until 4).map(_ => Defend()).toList :+ Bash()
     ).shuffleAllIntoDraw.drawHand(5),
-    (0 to 1).foldLeft(Map[UUID, Enemy]()) {
+    (0 to 1).foldLeft(Map[UUID, GenericEnemy]()) {
       case (a, b) =>
-        val enemy = Enemy("Slime", 10, 10, 0, Attack() :: Nil)
+        val enemy = GenericEnemy("Slime", 10, 10, 0, Attack() :: Nil)
+        a + (enemy.id -> enemy)
+    },
+    Map(),
+    Nil
+  )
+
+  val initialState2 = CardState(
+    Hero(24, 24, 3, 3, 0, 5),
+    Cards(
+      context,
+      (0 until 5).map(_ => Strike()).toList ++ (0 until 4).map(_ => Defend()).toList :+ Bash()
+    ).shuffleAllIntoDraw.drawHand(5),
+    (0 to 1).foldLeft(Map[UUID, GenericEnemy]()) {
+      case (a, b) =>
+        val enemy = GenericEnemy("Slime", 10, 10, 0, Attack() :: Nil)
         a + (enemy.id -> enemy)
     },
     Map(),

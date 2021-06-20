@@ -3,7 +3,7 @@ package com.ap.games.cards
 import java.util.UUID
 import scala.annotation.tailrec
 
-case class CardState(hero: Hero, cards: Cards, enemies: Map[UUID, Enemy], deadEnemies: Map[UUID, Enemy], prevHeroActions: List[CardGameAction]) {
+case class CardState(hero: Hero, cards: Cards, enemies: Map[UUID, GenericEnemy], deadEnemies: Map[UUID, GenericEnemy], prevHeroActions: List[CardGameAction]) {
   override def toString: String = {
     val sb = new StringBuilder()
     sb.append(s"Hero (${hero.life} / ${hero.maxLife} | ${hero.armor} | ${hero.energy} | ${hero.cardsPerTurn} | ${hero.effects.length}), ")
@@ -29,7 +29,7 @@ case class CardState(hero: Hero, cards: Cards, enemies: Map[UUID, Enemy], deadEn
 
   def addPrevAction(action: CardGameAction): CardState = copy(prevHeroActions = prevHeroActions :+ action)
 
-  def nextEnemyWithAction: Option[Enemy] = enemies.values.find(_.pendingActions.nonEmpty)
+  def nextEnemyWithAction: Option[GenericEnemy] = enemies.values.find(_.pendingActions.nonEmpty)
 
   @tailrec
   final def playEnemyActions: CardState = {
@@ -47,7 +47,7 @@ case class CardState(hero: Hero, cards: Cards, enemies: Map[UUID, Enemy], deadEn
 
   def updateTarget(target: CardTarget): CardState = {
     target match {
-      case e@Enemy(_, _, _, _, _, _, _) =>
+      case e@GenericEnemy(_, _, _, _, _, _, _) =>
         copy(enemies = enemies + (e.id -> e))
       case h@Hero(_, _, _, _, _, _, _) =>
         copy(hero = h)
