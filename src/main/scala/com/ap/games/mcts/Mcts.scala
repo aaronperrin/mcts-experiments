@@ -6,7 +6,7 @@ import scala.util.Random
 object Mcts {
   def playout[S, A](game: Game[S, A]): Node[S, A] = {
     val mcts = Mcts[S, A](1L) _
-    Runner(maxIterations = 10000)(game.initialNode)(
+    GameRunner(maxIterations = 2500).parallel()(game.initialNode)(
       node => mcts(game).select(node)
     )
   }

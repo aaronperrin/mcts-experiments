@@ -1,6 +1,6 @@
 package com.ap.games.dice
 
-import com.ap.games.mcts.{Game, Mcts, Runner}
+import com.ap.games.mcts.{Game, Mcts}
 
 import scala.util.Random
 
