@@ -15,13 +15,27 @@ case class CardState(hero: Hero, cards: Cards, enemies: Map[UUID, GenericEnemy],
     })
     sb.toString()
   }
+
+  val actions: List[CardGameAction] =
+    if(hero.life > 0 && enemies.nonEmpty)
+      cards.hand
+        .filter(_.energy <= hero.energy)
+        .flatMap(card => card.validTargets(this).map((card, _)))
+        .map(a => CardAction(a._1, a._2 :: Nil)) :+
+        EndTurn
+    else
+      Nil
   
   def reward = {
     val lifeVar = (hero.maxLife - hero.life) / hero.maxLife.toDouble
+
     val totalEnemyLife = deadEnemies.values.map(_.maxLife).sum + enemies.values.map(_.maxLife).sum
     val currentEnemyLife = enemies.values.map(_.life).sum
     val enemyVar = (totalEnemyLife - currentEnemyLife) / totalEnemyLife.toDouble
-    val score = Math.max(0, enemyVar - lifeVar)
+
+    val actionsVar = (Math.max(0, 100 - prevHeroActions.length)) / 100.0
+
+    val score = Math.max(0, actionsVar / 2.0 + enemyVar / 2.0 - lifeVar)
     score / maxReward
   }
 
@@ -29,21 +43,20 @@ case class CardState(hero: Hero, cards: Cards, enemies: Map[UUID, GenericEnemy],
 
   def addPrevAction(action: CardGameAction): CardState = copy(prevHeroActions = prevHeroActions :+ action)
 
-  def nextEnemyWithAction: Option[GenericEnemy] = enemies.values.find(_.pendingActions.nonEmpty)
+  val nextEnemyWithAction: Option[(GenericEnemy, EnemyAction)] =
+    enemies.values.find(_.pendingActions.nonEmpty).map(enemy => (enemy, enemy.pendingActions.head))
 
   @tailrec
-  final def playEnemyActions: CardState = {
+  final def playEnemyActions: CardState =
     nextEnemyWithAction match {
       case None =>
         this
-      case Some(enemy) =>
-        val action = enemy.pendingActions.head
-        val updatedHero = action.invoke(hero)
-        val updatedEnemy = enemy.copy(pendingActions = enemy.pendingActions.tail)
-        val updatedEnemies = enemies + (updatedEnemy.id -> updatedEnemy)
-        copy(hero = updatedHero, enemies = updatedEnemies).playEnemyActions
+      case Some((enemy, action)) =>
+        copy(
+          hero = action.invoke(hero),
+          enemies = enemies + (enemy.id -> enemy.copy(pendingActions = enemy.pendingActions.tail))
+        ).playEnemyActions
     }
-  }
 
   def updateTarget(target: CardTarget): CardState = {
     target match {
@@ -74,11 +87,11 @@ case class CardState(hero: Hero, cards: Cards, enemies: Map[UUID, GenericEnemy],
 
   def reduceHeroEnergy(amount: Int): CardState = copy(hero = hero.copy(energy = Math.max(0, hero.energy - amount)))
 
-  def setupHeroTurn: CardState = {
-    copy(cards = cards.drawHand(hero.cardsPerTurn), hero = hero.resetEnergy)
+  def initHeroTurn: CardState = {
+    copy(cards = cards.drawHand(hero.cardsPerTurn), hero = hero.resetEnergy.resetArmor)
   }
 
-  def showNextEnemyActions: CardState = {
+  def refreshEnemyActions: CardState = {
     val updatedEnemies = enemies.keys.foldLeft(enemies) {
       case (enemies, key) =>
         val enemy = enemies(key)

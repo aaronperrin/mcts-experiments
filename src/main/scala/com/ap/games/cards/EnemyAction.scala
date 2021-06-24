@@ -5,5 +5,5 @@ abstract class EnemyAction(val effects: List[Effect]) {
 }
 
 case class Attack(damage: Int = 5) extends EnemyAction(Nil) {
-  override def invoke(hero: Hero): Hero = hero.modLife(-damage)
+  override def invoke(hero: Hero): Hero = hero.takeHit(damage)
 }

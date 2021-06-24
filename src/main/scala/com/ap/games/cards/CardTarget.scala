@@ -5,17 +5,21 @@ import java.util.UUID
 trait CardTarget {
   def addEffect(effect: Effect): CardTarget
 
-  def modLife(amt: Int): CardTarget
+  def takeHit(amt: Int): CardTarget
 
-  def modArmor(amt: Int): CardTarget
+  def heal(amt: Int): CardTarget
+
+  def addArmor(amt: Int): CardTarget
 }
 
 case object NoTarget extends CardTarget {
   override def addEffect(effect: Effect): CardTarget = this
 
-  override def modLife(amt: Int): CardTarget = this
+  override def takeHit(amt: Int): CardTarget = this
 
-  override def modArmor(amt: Int): CardTarget = this
+  override def addArmor(amt: Int): CardTarget = this
+
+  override def heal(amt: Int): CardTarget = ???
 }
 
 case class Hero(
@@ -27,24 +31,31 @@ case class Hero(
   cardsPerTurn: Int,
   effects: List[Effect] = Nil
 ) extends CardTarget {
-  override def modLife(amt: Int): Hero = {
-    val modifier = effects.find(_.isInstanceOf[Vulnerability]).map(_ => 1.25f).getOrElse(1.0f)
-    val change = Math.round(modifier * amt)
-    if (change < 0 && armor > 0) {
-      val updatedArmor = Math.max(0, armor + change)
-      val updatedLife = life + change + (armor - updatedArmor)
+  override def takeHit(amt: Int): Hero = {
+    val mod = effects.find(_.isInstanceOf[Vulnerability]).map(_ => 1.25f).getOrElse(1.0f)
+    val modAmt = Math.round(mod * amt)
+
+    if (armor > 0) {
+      val armorDamage = Math.min(armor, modAmt)
+      val updatedArmor = armor - armorDamage
+      val lifeDamage = modAmt - armorDamage
+      val updatedLife = Math.max(0, life - lifeDamage)
       copy(life = updatedLife, armor = updatedArmor)
     }
     else {
-      copy(life = Math.min(life + change, maxLife))
+      copy(life = Math.max(0, life - modAmt))
     }
   }
 
-  override def modArmor(amount: Int): Hero = copy(armor = Math.max(0, armor + amount))
+  override def addArmor(amount: Int): Hero = copy(armor = Math.max(0, armor + amount))
 
   def resetEnergy: Hero = copy(energy = energyPerTurn)
 
+  def resetArmor: Hero = copy(armor = 0)
+
   override def addEffect(effect: Effect): CardTarget = copy(effects = effects :+ effect)
+
+  override def heal(amt: Int): CardTarget = ???
 }
 
 trait Enemy extends CardTarget {
@@ -63,6 +74,41 @@ trait Enemy extends CardTarget {
   def id: UUID = UUID.randomUUID()
 }
 
+case class Louse(
+  name: String,
+  life: Int,
+  maxLife: Int,
+  armor: Int,
+  pendingActions: List[EnemyAction],
+  override val effects: List[Effect] = Nil,
+  override val id: UUID = UUID.randomUUID(),
+  hit: Boolean = false,
+  onHit: Louse => Louse
+) extends Enemy {
+  override def addEffect(effect: Effect): CardTarget = copy(effects = effects :+ effect)
+
+  override def takeHit(amt: Int): CardTarget = {
+    val mod = effects.find(_.isInstanceOf[Vulnerability]).map(_ => 1.25f).getOrElse(1.0f)
+    val modAmt = Math.round(mod * amt)
+
+    if (armor > 0) {
+      val armorDamage = Math.min(armor, modAmt)
+      val updatedArmor = armor - armorDamage
+      val lifeDamage = modAmt - armorDamage
+      val updatedLife = Math.max(0, life - lifeDamage)
+      copy(life = updatedLife, armor = updatedArmor)
+    }
+    else {
+      copy(life = Math.max(0, life - modAmt))
+    }
+
+  }
+
+  override def addArmor(amt: Int): CardTarget = ???
+
+  override def heal(amt: Int): CardTarget = ???
+}
+
 case class GenericEnemy(
   name: String,
   life: Int,
@@ -74,9 +120,25 @@ case class GenericEnemy(
 ) extends Enemy {
   def enableNextAction: GenericEnemy = copy(pendingActions = Attack() :: Nil)
 
-  override def modLife(amt: Int): CardTarget = copy(life = Math.max(0, Math.min(maxLife, life + amt)))
+  override def takeHit(amt: Int): CardTarget = {
+    val mod = effects.find(_.isInstanceOf[Vulnerability]).map(_ => 1.25f).getOrElse(1.0f)
+    val modAmt = Math.round(mod * amt)
 
-  override def modArmor(amount: Int): CardTarget = copy(armor = Math.max(0, armor + amount))
+    if (armor > 0) {
+      val armorDamage = Math.min(armor, modAmt)
+      val updatedArmor = armor - armorDamage
+      val lifeDamage = modAmt - armorDamage
+      val updatedLife = Math.max(0, life - lifeDamage)
+      copy(life = updatedLife, armor = updatedArmor)
+    }
+    else {
+      copy(life = Math.max(0, life - modAmt))
+    }
+  }
+
+  override def addArmor(amount: Int): CardTarget = copy(armor = Math.max(0, armor + amount))
 
   override def addEffect(effect: Effect): CardTarget = copy(effects = effects :+ effect)
+
+  override def heal(amt: Int): CardTarget = ???
 }

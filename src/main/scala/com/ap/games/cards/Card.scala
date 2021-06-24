@@ -34,7 +34,7 @@ case object EndTurn extends CardGameAction {
 case class Strike(id: UUID = UUID.randomUUID(), dmg: Int = 5) extends Card(1, Nil) {
   override def invoke(state: CardState, targets: List[CardTarget]): CardState = {
     targets.foldLeft(state) {
-      case (state, target) => state.updateTarget(target.modLife(-dmg))
+      case (state, target) => state.updateTarget(target.takeHit(dmg))
     }.discard(this)
       .reduceHeroEnergy(energy)
   }
@@ -44,7 +44,7 @@ case class Strike(id: UUID = UUID.randomUUID(), dmg: Int = 5) extends Card(1, Ni
 case class Defend(id: UUID = UUID.randomUUID(), amt: Int = 5) extends Card(1, Nil) {
   override def invoke(state: CardState, targets: List[CardTarget]): CardState = {
     targets.foldLeft(state) {
-      case (state, target) => state.updateTarget(target.modArmor(amt))
+      case (state, target) => state.updateTarget(target.addArmor(amt))
     }.discard(this)
       .reduceHeroEnergy(energy)
   }
@@ -54,13 +54,12 @@ case class Defend(id: UUID = UUID.randomUUID(), amt: Int = 5) extends Card(1, Ni
 case class Bash(id: UUID = UUID.randomUUID(), dmg: Int = 8) extends Card(2, Vulnerability(2) :: Nil){
   override def invoke(state: CardState, targets: List[CardTarget]): CardState = {
     var updatedState = targets.foldLeft(state) {
-      case (state, target) => state.updateTarget(target.modLife(-dmg))
+      case (state, target) => state.updateTarget(target.takeHit(dmg))
     }
     updatedState = targets.foldLeft(updatedState) {
       case (state, target) => state.updateTarget(target.addEffect(effects.head))
     }
     updatedState
-      .clearDeadEnemies
       .discard(this)
       .reduceHeroEnergy(energy)
   }
