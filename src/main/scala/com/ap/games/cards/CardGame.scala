@@ -2,14 +2,14 @@ package com.ap.games.cards
 
 import com.ap.games.mcts.Game
 
-case class CardGame(override val initialState: CardState) extends Game[CardState, CardGameAction] {
+case class CardGame(override val initialState: CardGameState) extends Game[CardGameState, CardGameAction] {
 
-  override def actions(state: CardState): List[CardGameAction] = state.actions
+  override def actions(state: CardGameState): List[CardGameAction] = state.actions
 
   override def nextState(
     action: CardGameAction,
-    state: CardState
-  ): CardState =
+    state: CardGameState
+  ): CardGameState =
     if(action == EndTurn)
       state
         .playEnemyActions
@@ -22,7 +22,7 @@ case class CardGame(override val initialState: CardState) extends Game[CardState
         .clearDeadEnemies
 
 
-  override def reward(state: CardState): Double = {
+  override def reward(state: CardGameState): Double = {
     state.reward
   }
 

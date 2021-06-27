@@ -8,7 +8,7 @@ object CardMain {
 
   val context = GameContext()
 
-  val initialState = CardState(
+  val initialState = CardGameState(
     Hero(24, 24, 3, 3, 0, 5),
     Cards(
       context,
@@ -23,7 +23,7 @@ object CardMain {
     Nil
   )
 
-  val initialState2 = CardState(
+  val initialState2 = CardGameState(
     Hero(24, 24, 3, 3, 0, 5),
     Cards(
       context,
