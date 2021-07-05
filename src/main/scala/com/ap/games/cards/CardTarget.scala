@@ -31,6 +31,7 @@ case class Hero(
   cardsPerTurn: Int,
   effects: List[Effect] = Nil
 ) extends CardTarget {
+  def isDead = life <= 0
   override def takeHit(amt: Int): Hero = {
     val mod = effects.find(_.isInstanceOf[Vulnerability]).map(_ => 1.25f).getOrElse(1.0f)
     val modAmt = Math.round(mod * amt)

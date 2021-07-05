@@ -4,51 +4,17 @@ import com.ap.games.mcts.Mcts
 
 import java.util.UUID
 
-object CardMain {
-
-  val context = GameContext()
-
-  val initialState = CardGameState(
-    Hero(24, 24, 3, 3, 0, 5),
-    Cards(
-      context,
-      (0 until 5).map(_ => Strike()).toList ++ (0 until 4).map(_ => Defend()).toList :+ Bash()
-    ).shuffleAllIntoDraw.drawHand(5),
-    (0 to 1).foldLeft(Map[UUID, GenericEnemy]()) {
-      case (a, b) =>
-        val enemy = GenericEnemy("Slime", 10, 10, 0, Attack() :: Nil)
-        a + (enemy.id -> enemy)
-    },
-    Map(),
-    Nil
-  )
-
-  val initialState2 = CardGameState(
-    Hero(24, 24, 3, 3, 0, 5),
-    Cards(
-      context,
-      (0 until 5).map(_ => Strike()).toList ++ (0 until 4).map(_ => Defend()).toList :+ Bash()
-    ).shuffleAllIntoDraw.drawHand(5),
-    (0 to 1).foldLeft(Map[UUID, GenericEnemy]()) {
-      case (a, b) =>
-        val enemy = GenericEnemy("Slime", 10, 10, 0, Attack() :: Nil)
-        a + (enemy.id -> enemy)
-    },
-    Map(),
-    Nil
-  )
-
+object CardMain extends Monitor with GameContext {
   def main(args: Array[String]): Unit = {
-    var state = initialState
+    var state = CardGameState.initialGameState(this, this)
     var game = CardGame(state)
-    println(state)
     var result = Mcts.playout(game)
     var maybeAction = result.bestAction
     while (maybeAction.isDefined) {
       state = game.nextState(maybeAction.get, state)
       println(maybeAction.get)
       println(state)
-      println(game.reward(state) * state.maxReward)
+      println(game.reward(state))
       game = CardGame(state)
       result = Mcts.playout(game)
       maybeAction = result.bestAction
