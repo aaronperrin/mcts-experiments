@@ -1,19 +1,31 @@
 package com.ap.games.mcts
 
 import java.lang.System.currentTimeMillis
-import scala.collection.parallel.CollectionConverters._
 import scala.concurrent.duration._
+import scala.concurrent.{Await, ExecutionContext, Future, blocking}
 
-trait GameRunner { f =>
+trait GameRunner {
+  f =>
   def apply[S, A](initial: Node[S, A])(iter: Node[S, A] => Node[S, A]): Node[S, A]
 
   final def parallel(parallelism: Int = math.max(Runtime.getRuntime.availableProcessors - 1, 1)): GameRunner =
     new GameRunner {
-      override def apply[S, A](initial: Node[S, A])(iter: Node[S, A] => Node[S, A]): Node[S, A] =
-        (0 until parallelism).par
-          .map(_ => f(initial)(iter))
-          .seq
-          .reduce(Node.combine[S, A])
+      override def apply[S, A](initial: Node[S, A])(iter: Node[S, A] => Node[S, A]): Node[S, A] = {
+        implicit val ec: ExecutionContext = ExecutionContext.global
+        Await.result(
+          Future.reduceLeft(
+            (0 until parallelism).map { _ =>
+              Future {
+                blocking {
+                  f(initial)(iter)
+                }
+              }
+            }
+          ) {
+            case (a, b) => Node.combine[S, A](a, b)
+          }, Duration.Inf
+        )
+      }
     }
 }
 

@@ -3,39 +3,7 @@ package com.ap.games.cards
 import java.util.UUID
 import scala.annotation.tailrec
 
-object EncounterState {
-  def initialState(context: GameContext) = EncounterState(
-    Hero(24, 24, 3, 3, 0, 5),
-    Cards(
-      context,
-      (0 until 5).map(_ => Strike()).toList ++ (0 until 4).map(_ => Defend()).toList :+ Bash()
-    ).shuffleAllIntoDraw.drawHand(5),
-    (0 to 1).foldLeft(Map[UUID, GenericEnemy]()) {
-      case (a, b) =>
-        val enemy = GenericEnemy("Slime", 10, 10, 0, Attack() :: Nil)
-        a + (enemy.id -> enemy)
-    },
-    Map(),
-    Nil
-  )
-
-  def initialState2(context: GameContext) = EncounterState(
-    Hero(24, 24, 3, 3, 0, 5),
-    Cards(
-      context,
-      (0 until 5).map(_ => Strike()).toList ++ (0 until 4).map(_ => Defend()).toList :+ Bash()
-    ).shuffleAllIntoDraw.drawHand(5),
-    (0 to 1).foldLeft(Map[UUID, GenericEnemy]()) {
-      case (a, b) =>
-        val enemy = GenericEnemy("Slime", 10, 10, 0, Attack() :: Nil)
-        a + (enemy.id -> enemy)
-    },
-    Map(),
-    Nil
-  )
-}
-
-case class EncounterState(hero: Hero, cards: Cards, enemies: Map[UUID, GenericEnemy], deadEnemies: Map[UUID, GenericEnemy], prevHeroActions: List[CardGameAction], maybeMonitor: Option[Monitor] = None) {
+case class EncounterState(hero: Hero, cards: Cards, enemies: Map[UUID, GenericEnemy], deadEnemies: Map[UUID, GenericEnemy], prevHeroActions: List[CardGameAction], maybeMonitor: Option[GameStateListener] = None) {
   def nextState(action: CardGameAction): EncounterState = {
     if(action == EndTurn) {
       maybeMonitor.foreach(_.afterEndTurn(this))
@@ -50,15 +18,13 @@ case class EncounterState(hero: Hero, cards: Cards, enemies: Map[UUID, GenericEn
   }
 
   override def toString: String = {
-    val sb = new StringBuilder()
-    sb.append(s"Hero (${hero.life} / ${hero.maxLife} | ${hero.armor} | ${hero.energy} | ${hero.cardsPerTurn} | ${hero.effects.length}), ")
-    cards.hand.foreach(card => {
-      sb.append(s"${card.getClass.getSimpleName}, ")
-    })
-    enemies.foreach(enemy => {
-      sb.append(s"${enemy._2.name} (${enemy._2.life} / ${enemy._2.maxLife} | ${enemy._2.armor} | ${enemy._2.pendingActions} | ${enemy._2.effects}), ")
-    })
-    sb.toString()
+    s"""
+       |hero = $hero
+       |cards = $cards
+       |enemies = ${enemies.values}
+       |deadEnemies = ${deadEnemies.values}
+       |prev action count = ${prevHeroActions.length}
+       |""".stripMargin
   }
 
   val actions: List[CardGameAction] =

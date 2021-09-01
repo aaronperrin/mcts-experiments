@@ -6,6 +6,7 @@ case class Cards(
   hand: List[Card] = Nil,
   discard: List[Card] = Nil
 ) {
+  override def toString: String = s"""$draw, $hand, $discard"""
   def discardHand : Cards = copy(hand = Nil, discard = discard :++ hand)
 
   def hasCards: Boolean = draw.nonEmpty || hand.nonEmpty || discard.nonEmpty

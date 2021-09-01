@@ -2,7 +2,7 @@ package com.ap.games.cards
 
 import com.ap.games.mcts.Game
 
-case class CardGame(override val initialState: CardGameState, maybeMonitor: Option[Monitor] = None) extends Game[CardGameState, CardGameAction] {
+case class CardGame(override val initialState: CardGameState, maybeMonitor: Option[GameStateListener] = None) extends Game[CardGameState, CardGameAction] {
 
   override def actions(state: CardGameState): List[CardGameAction] = state.actions
 

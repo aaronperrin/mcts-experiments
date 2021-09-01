@@ -23,8 +23,14 @@ case class CardAction(card: Card, override val targets: List[CardTarget]) extend
 }
 
 abstract class Card(val energy: Int, val effects: List[Effect]) {
-  def invoke(state: EncounterState, targets: List[CardTarget]): EncounterState
+  def invoke(state: EncounterState, targets: List[CardTarget]): EncounterState = {
+    state
+      .discard(this)
+      .reduceHeroEnergy(energy)
+  }
   def validTargets(state: EncounterState): List[CardTarget]
+
+  override def toString: String = getClass.getSimpleName
 }
 
 case object NoAction extends CardGameAction {
@@ -38,7 +44,7 @@ case object EndTurn extends CardGameAction {
 case class Strike(id: UUID = UUID.randomUUID(), dmg: Int = 5) extends Card(1, Nil) {
   override def invoke(state: EncounterState, targets: List[CardTarget]): EncounterState = {
     targets.foldLeft(state) {
-      case (state, target) => state.updateTarget(target.takeHit(dmg))
+      case (state, target) => state.updateTarget(target.takePhysicalDamage(dmg))
     }.discard(this)
       .reduceHeroEnergy(energy)
   }
@@ -57,15 +63,8 @@ case class Defend(id: UUID = UUID.randomUUID(), amt: Int = 5) extends Card(1, Ni
 }
 case class Bash(id: UUID = UUID.randomUUID(), dmg: Int = 8) extends Card(2, Vulnerability(2) :: Nil){
   override def invoke(state: EncounterState, targets: List[CardTarget]): EncounterState = {
-    var updatedState = targets.foldLeft(state) {
-      case (state, target) => state.updateTarget(target.takeHit(dmg))
-    }
-    updatedState = targets.foldLeft(updatedState) {
-      case (state, target) => state.updateTarget(target.addEffect(effects.head))
-    }
-    updatedState
-      .discard(this)
-      .reduceHeroEnergy(energy)
+    val nextState = state.updateTarget(targets.head.takePhysicalDamage(dmg).addEffect(effects.head))
+    super.invoke(nextState, targets)
   }
 
   override def validTargets(state: EncounterState): List[CardTarget] = state.enemies.values.toList

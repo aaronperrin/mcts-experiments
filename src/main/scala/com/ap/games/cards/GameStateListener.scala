@@ -1,6 +1,6 @@
 package com.ap.games.cards
 
-trait Monitor {
+trait GameStateListener {
   def afterEndTurn(state: EncounterState): Unit = {
     println("after end turn")
     println(state)
